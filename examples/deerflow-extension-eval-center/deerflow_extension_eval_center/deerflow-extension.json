@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "id": "local.eval-center",
+  "locales": {
+    "zh-CN": {
+      "title": "Agent 评测工作台",
+      "description": "查看三个固定用例，执行离线流程演示或真实 Agent 实验，逐条检查输出和规则评分，导出实验报告。",
+      "usage": [
+        {
+          "title": "先确认固定用例",
+          "description": "从侧边栏打开 Agent 评测，查看每条输入、参考答案和 JSON 判分标准。参考答案只用于评分。"
+        },
+        {
+          "title": "运行并复核结果",
+          "description": "先运行离线演示验证流程，再按需运行真实 Agent。查看执行状态、实际输出、逐项评分与原始会话，并下载 JSON 报告。"
+        }
+      ]
+    },
+    "en-US": {
+      "title": "Agent Evaluation Workbench",
+      "description": "Inspect three fixed cases, run deterministic offline demonstrations or real Agent experiments, review rule-based grades and export reports.",
+      "usage": [
+        {
+          "title": "Inspect the cases",
+          "description": "Open Agent Evaluation from the sidebar to inspect each prompt, reference answer and JSON grading rule. References are used only by the grader."
+        },
+        {
+          "title": "Run and review an experiment",
+          "description": "Run an offline demonstration first, then explicitly start a real Agent experiment. Inspect outputs, checks and source conversations, and download a JSON report."
+        }
+      ]
+    }
+  }
+}

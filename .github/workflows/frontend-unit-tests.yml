@@ -1,0 +1,64 @@
+name: Frontend Unit Tests
+
+on:
+  push:
+    branches: [ 'main', '*-dev' ]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: frontend-unit-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    # Path scoping lives in scripts/ci_changed_scopes.py so every workflow reads
+    # one rule set. It fails open: pushes and CI config changes run every scope.
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.scopes.outputs.backend }}
+      frontend: ${{ steps.scopes.outputs.frontend }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # The PR merge commit and its first parent, the base branch tip.
+          fetch-depth: 2
+
+      - name: Detect changed scopes
+        id: scopes
+        run: python3 scripts/ci_changed_scopes.py --event "${{ github.event_name }}" >> "$GITHUB_OUTPUT"
+
+  frontend-unit-tests:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Use pinned pnpm version
+        run: corepack prepare pnpm@10.26.2 --activate
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unit tests of frontend
+        working-directory: frontend
+        run: make test

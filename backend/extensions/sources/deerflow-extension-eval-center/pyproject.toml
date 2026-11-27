@@ -1,0 +1,34 @@
+[project]
+name = "deerflow-extension-eval-center"
+version = "0.2.0"
+description = "Owner-scoped Agent evaluation workbench for DeerFlow"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["deerflow-extension-api>=0.2.13,<0.3"]
+
+[project.entry-points."deerflow.extensions"]
+eval-center = "deerflow_extension_eval_center:install"
+
+[project.optional-dependencies]
+dev = ["pytest>=9,<10", "pytest-asyncio>=1,<2", "ruff>=0.14,<1", "fastapi>=0.115,<1", "httpx>=0.28,<1", "uvicorn>=0.30,<1"]
+preview = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1"]
+live = ["httpx>=0.28,<1"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["deerflow_extension_eval_center"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 140
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

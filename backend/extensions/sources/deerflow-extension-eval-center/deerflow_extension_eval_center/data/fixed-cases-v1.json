@@ -1,0 +1,37 @@
+{
+  "id": "fixed-cases-v1",
+  "name": "固定业务用例：销售汇总、退款与非法输入",
+  "revision": 1,
+  "cases": [
+    {
+      "id": "monthly-sales-001",
+      "title": "按月汇总销售额",
+      "prompt": "按月份汇总下面的销售记录，并计算总销售额。所有金额都是整数元。只返回一个 JSON 对象，不要解释、Markdown 或代码围栏。输出字段为 month_totals（对象，月份为键、汇总金额为值）和 grand_total（总金额）。输入记录：[{\"month\":\"2026-01\",\"amount\":100},{\"month\":\"2026-01\",\"amount\":200},{\"month\":\"2026-02\",\"amount\":80}]",
+      "expected": {
+        "month_totals": {"2026-01": 300, "2026-02": 80},
+        "grand_total": 380
+      },
+      "grader": "json_exact_v1"
+    },
+    {
+      "id": "net-revenue-001",
+      "title": "退款后净收入与全额退款订单数",
+      "prompt": "计算下面三笔订单的净收入合计（每笔实收 paid 减去退款 refunded），并统计全额退款订单数（paid 大于 0 且 refunded 等于 paid）。所有金额都是整数元。只返回一个 JSON 对象，不要解释、Markdown 或代码围栏。输出字段为 net_revenue（净收入合计）和 fully_refunded_orders（全额退款订单数）。输入订单：[{\"id\":\"A\",\"paid\":100,\"refunded\":20},{\"id\":\"B\",\"paid\":150,\"refunded\":0},{\"id\":\"C\",\"paid\":50,\"refunded\":50}]",
+      "expected": {
+        "net_revenue": 230,
+        "fully_refunded_orders": 1
+      },
+      "grader": "json_exact_v1"
+    },
+    {
+      "id": "invalid-amount-001",
+      "title": "拒绝非法金额并定位输入行",
+      "prompt": "校验下面销售记录的 amount 字段。合法金额必须是 JSON 整数（布尔值与字符串都不合法）。按输入顺序查找第一个非法金额，行号从 1 开始。遇到非法金额时，只返回包含 error_code（固定字符串 INVALID_AMOUNT）和 invalid_row（行号）的 JSON 对象，不进行金额汇总。全部合法时返回 {\"valid\":true}。不要解释、Markdown 或代码围栏。输入记录：[{\"amount\":100},{\"amount\":\"abc\"},{\"amount\":80}]",
+      "expected": {
+        "error_code": "INVALID_AMOUNT",
+        "invalid_row": 2
+      },
+      "grader": "json_exact_v1"
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+name: Lint Check
+
+on:
+  push:
+    branches: [ 'main', '*-dev' ]
+  pull_request:
+    branches: [ '*' ]
+
+concurrency:
+  group: lint-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    # Path scoping lives in scripts/ci_changed_scopes.py so every workflow reads
+    # one rule set. It fails open: pushes and CI config changes run every scope.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.scopes.outputs.backend }}
+      frontend: ${{ steps.scopes.outputs.frontend }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # The PR merge commit and its first parent, the base branch tip.
+          fetch-depth: 2
+
+      - name: Detect changed scopes
+        id: scopes
+        run: python3 scripts/ci_changed_scopes.py --event "${{ github.event_name }}" >> "$GITHUB_OUTPUT"
+
+  agent-guidance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Check agent guidance on pull requests
+        if: github.event_name == 'pull_request'
+        run: >-
+          python scripts/check_agent_guidance.py
+          --base-ref "${{ github.event.pull_request.base.sha }}"
+          --head-ref "${{ github.event.pull_request.head.sha }}"
+          --github-annotations
+
+      - name: Check agent guidance on pushes
+        if: github.event_name == 'push'
+        run: >-
+          python scripts/check_agent_guidance.py
+          --before "${{ github.event.before }}"
+          --after "${{ github.sha }}"
+          --github-annotations
+
+  frontend-scope-reads:
+    # Not gated on a scope: the PR that makes frontend code read a new path
+    # outside the frontend scope may only run frontend jobs.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check frontend reads stay inside the frontend scope
+        run: python3 scripts/ci_changed_scopes.py --check-frontend-reads
+
+  label-declarations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Check every label applied by triage.yml is declared in labels.yml
+        run: python scripts/check_label_declarations.py
+
+  lint-backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          # Must match backend/Dockerfile's UV_IMAGE tag; pinned by backend/tests/test_ci_uv_version_pin.py
+          version: "0.11.1"
+
+      - name: Check uv.lock is in sync
+        working-directory: backend
+        run: uv lock --check
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          uv sync --group dev
+
+      - name: Lint backend
+        working-directory: backend
+        run: make lint
+
+  lint-frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Use pinned pnpm version
+        run: corepack prepare pnpm@10.26.2 --activate
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          pnpm install --frozen-lockfile
+
+      - name: Check frontend formatting
+        run: |
+          cd frontend
+          pnpm format
+
+      - name: Run frontend linting
+        run: |
+          cd frontend
+          pnpm lint
+
+      - name: Check TypeScript types
+        run: |
+          cd frontend
+          pnpm typecheck
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          BETTER_AUTH_SECRET=local-dev-secret pnpm build

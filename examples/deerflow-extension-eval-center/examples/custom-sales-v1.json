@@ -1,0 +1,14 @@
+{
+  "id": "custom-sales-practice",
+  "name": "我的销售额评测练习",
+  "revision": 1,
+  "cases": [
+    {
+      "id": "simple-sales-001",
+      "title": "两笔订单销售额求和",
+      "prompt": "订单 A 的销售额为 25 元，订单 B 的销售额为 75 元。请计算总销售额。只返回一个 JSON 对象，包含 grand_total 数字字段，不要额外文字或 Markdown。",
+      "expected": {"grand_total": 100},
+      "grader": "json_exact_v1"
+    }
+  ]
+}
